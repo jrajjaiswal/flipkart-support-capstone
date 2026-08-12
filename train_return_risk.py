@@ -321,6 +321,13 @@ print(
     round(best_logistic_precision, 4)
 )
 
+logistic_precision_drop = logistic_precision - best_logistic_precision
+
+print(
+    "Precision drop from default threshold:",
+    round(logistic_precision_drop, 4)
+)
+
 print(
     "Business trade-off: lowering the threshold makes it easier "
     "to flag possible returns, increasing recall while accepting "
