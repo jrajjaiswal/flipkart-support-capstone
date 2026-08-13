@@ -1,4 +1,3 @@
-
 import os
 import random
 
@@ -12,7 +11,7 @@ from PIL import Image
 from sklearn.metrics import (
     accuracy_score,
     confusion_matrix,
-    precision_recall_fscore_support
+    precision_recall_fscore_support,
 )
 
 from sklearn.model_selection import train_test_split
@@ -20,7 +19,7 @@ from sklearn.model_selection import train_test_split
 from torch.utils.data import (
     DataLoader,
     Subset,
-    TensorDataset
+    TensorDataset,
 )
 
 from torchvision import datasets, models, transforms
@@ -45,7 +44,6 @@ MODEL_PATH = "models/product_classifier.pt"
 CONFUSION_MATRIX_PATH = "data/confusion_matrix.csv"
 SAMPLE_DIR = "data/sample_images"
 
-
 CLASS_NAMES = [
     "T-shirt/top",
     "Trouser",
@@ -56,20 +54,11 @@ CLASS_NAMES = [
     "Shirt",
     "Sneaker",
     "Bag",
-    "Ankle boot"
+    "Ankle boot",
 ]
 
-IMAGENET_MEAN = [
-    0.485,
-    0.456,
-    0.406
-]
-
-IMAGENET_STD = [
-    0.229,
-    0.224,
-    0.225
-]
+IMAGENET_MEAN = [0.485, 0.456, 0.406]
+IMAGENET_STD = [0.229, 0.224, 0.225]
 
 
 # ============================================================
@@ -107,6 +96,11 @@ os.makedirs(
 )
 
 os.makedirs(
+    "data",
+    exist_ok=True
+)
+
+os.makedirs(
     SAMPLE_DIR,
     exist_ok=True
 )
@@ -119,13 +113,13 @@ os.makedirs(
 train_dataset_raw = datasets.FashionMNIST(
     root="data",
     train=True,
-    download=True
+    download=True,
 )
 
 test_dataset_raw = datasets.FashionMNIST(
     root="data",
     train=False,
-    download=True
+    download=True,
 )
 
 train_labels = np.array(
@@ -138,30 +132,28 @@ train_indices, val_indices = train_test_split(
     ),
     test_size=6000,
     random_state=SEED,
-    stratify=train_labels
+    stratify=train_labels,
 )
 
 print("\nDATA SPLIT SIZES")
 print(
     "Original training split:",
-    len(train_dataset_raw)
+    len(train_dataset_raw),
 )
 print(
     "Training:",
-    len(train_indices)
+    len(train_indices),
 )
 print(
     "Validation:",
-    len(val_indices)
+    len(val_indices),
 )
 print(
     "Test:",
-    len(test_dataset_raw)
+    len(test_dataset_raw),
 )
 
-print(
-    "\nTEST SET STATUS"
-)
+print("\nTEST SET STATUS")
 print(
     "Test set is kept untouched until final evaluation."
 )
@@ -175,7 +167,7 @@ transform = transforms.Compose([
     transforms.Resize(
         (
             IMAGE_SIZE,
-            IMAGE_SIZE
+            IMAGE_SIZE,
         )
     ),
     transforms.Grayscale(
@@ -184,42 +176,42 @@ transform = transforms.Compose([
     transforms.ToTensor(),
     transforms.Normalize(
         mean=IMAGENET_MEAN,
-        std=IMAGENET_STD
-    )
+        std=IMAGENET_STD,
+    ),
 ])
 
 train_dataset = datasets.FashionMNIST(
     root="data",
     train=True,
     download=False,
-    transform=transform
+    transform=transform,
 )
 
 test_dataset = datasets.FashionMNIST(
     root="data",
     train=False,
     download=False,
-    transform=transform
+    transform=transform,
 )
 
 train_subset = Subset(
     train_dataset,
-    train_indices
+    train_indices,
 )
 
 val_subset = Subset(
     train_dataset,
-    val_indices
+    val_indices,
 )
 
 print("\nPREPROCESSING CONFIGURATION")
 print(
     "Backbone:",
-    BACKBONE_NAME
+    BACKBONE_NAME,
 )
 print(
     "Input size:",
-    f"{IMAGE_SIZE} x {IMAGE_SIZE}"
+    f"{IMAGE_SIZE} x {IMAGE_SIZE}",
 )
 print(
     "Input channels: 3"
@@ -231,15 +223,15 @@ print(
 print("\nDATASET SUBSETS")
 print(
     "Training subset:",
-    len(train_subset)
+    len(train_subset),
 )
 print(
     "Validation subset:",
-    len(val_subset)
+    len(val_subset),
 )
 print(
     "Test set:",
-    len(test_dataset)
+    len(test_dataset),
 )
 
 
@@ -260,7 +252,7 @@ num_features = resnet18.fc.in_features
 
 resnet18.fc = nn.Linear(
     num_features,
-    10
+    10,
 )
 
 for parameter in resnet18.fc.parameters():
@@ -271,7 +263,7 @@ resnet18 = resnet18.to(device)
 print("\nTRANSFER LEARNING MODEL")
 print(
     "Backbone:",
-    BACKBONE_NAME
+    BACKBONE_NAME,
 )
 print(
     "Pretrained weights: ImageNet"
@@ -281,35 +273,39 @@ print(
 )
 print(
     "Classifier classes:",
-    10
+    10,
 )
 print(
     "Classifier input features:",
-    num_features
+    num_features,
 )
 
 
 # ============================================================
-# TASK 3 — FEATURE EXTRACTION
+# TASK 3 — FROZEN FEATURE EXTRACTION
+# IMPORTANT:
+# Only training and validation features are extracted here.
+# Test features are deliberately NOT extracted yet.
 # ============================================================
 
 feature_extractor = nn.Sequential(
-    *list(resnet18.children())[:-1]
+    *list(
+        resnet18.children()
+    )[:-1]
 )
 
-feature_extractor = feature_extractor.to(
-    device
+feature_extractor = (
+    feature_extractor.to(device)
 )
 
 feature_extractor.eval()
-
 
 train_loader = DataLoader(
     train_subset,
     batch_size=BATCH_SIZE,
     shuffle=False,
     num_workers=2,
-    pin_memory=True
+    pin_memory=True,
 )
 
 val_loader = DataLoader(
@@ -317,28 +313,21 @@ val_loader = DataLoader(
     batch_size=BATCH_SIZE,
     shuffle=False,
     num_workers=2,
-    pin_memory=True
-)
-
-test_loader = DataLoader(
-    test_dataset,
-    batch_size=BATCH_SIZE,
-    shuffle=False,
-    num_workers=2,
-    pin_memory=True
+    pin_memory=True,
 )
 
 
 def extract_features(
     loader,
-    split_name
+    split_name,
 ):
 
     all_features = []
     all_labels = []
 
     print(
-        f"\nEXTRACTING {split_name.upper()} FEATURES..."
+        f"\nEXTRACTING "
+        f"{split_name.upper()} FEATURES..."
     )
 
     with torch.no_grad():
@@ -347,16 +336,18 @@ def extract_features(
 
             images = images.to(
                 device,
-                non_blocking=True
+                non_blocking=True,
             )
 
-            features = feature_extractor(
-                images
+            features = (
+                feature_extractor(
+                    images
+                )
             )
 
             features = features.view(
                 features.size(0),
-                -1
+                -1,
             )
 
             all_features.append(
@@ -369,50 +360,43 @@ def extract_features(
 
     features_tensor = torch.cat(
         all_features,
-        dim=0
+        dim=0,
     )
 
     labels_tensor = torch.cat(
         all_labels,
-        dim=0
+        dim=0,
     )
 
     print(
         f"{split_name} feature shape:",
         tuple(
             features_tensor.shape
-        )
+        ),
     )
 
     print(
         f"{split_name} labels:",
-        len(labels_tensor)
+        len(labels_tensor),
     )
 
     return (
         features_tensor,
-        labels_tensor
+        labels_tensor,
     )
 
 
 train_features, train_feature_labels = (
     extract_features(
         train_loader,
-        "Training"
+        "Training",
     )
 )
 
 val_features, val_feature_labels = (
     extract_features(
         val_loader,
-        "Validation"
-    )
-)
-
-test_features, test_feature_labels = (
-    extract_features(
-        test_loader,
-        "Test"
+        "Validation",
     )
 )
 
@@ -424,77 +408,59 @@ print(
     "Training:",
     tuple(
         train_features.shape
-    )
+    ),
 )
 
 print(
     "Validation:",
     tuple(
         val_features.shape
-    )
-)
-
-print(
-    "Test:",
-    tuple(
-        test_features.shape
-    )
+    ),
 )
 
 
 # ============================================================
-# TASK 3 — TRAIN CLASSIFIER HEAD
+# TASK 3 — CLASSIFIER HEAD
 # ============================================================
 
 train_feature_dataset = TensorDataset(
     train_features,
-    train_feature_labels
+    train_feature_labels,
 )
 
 val_feature_dataset = TensorDataset(
     val_features,
-    val_feature_labels
-)
-
-test_feature_dataset = TensorDataset(
-    test_features,
-    test_feature_labels
+    val_feature_labels,
 )
 
 train_feature_loader = DataLoader(
     train_feature_dataset,
     batch_size=HEAD_BATCH_SIZE,
-    shuffle=True
+    shuffle=True,
 )
 
 val_feature_loader = DataLoader(
     val_feature_dataset,
     batch_size=HEAD_BATCH_SIZE,
-    shuffle=False
-)
-
-test_feature_loader = DataLoader(
-    test_feature_dataset,
-    batch_size=HEAD_BATCH_SIZE,
-    shuffle=False
+    shuffle=False,
 )
 
 classifier_head = nn.Linear(
     512,
-    10
+    10,
 ).to(device)
 
 criterion = nn.CrossEntropyLoss()
 
 optimizer = torch.optim.Adam(
     classifier_head.parameters(),
-    lr=LEARNING_RATE
+    lr=LEARNING_RATE,
 )
 
 
 def evaluate_head(
     model,
-    loader
+    loader,
 ):
 
     model.eval()
@@ -508,20 +474,22 @@ def evaluate_head(
 
             features = features.to(
                 device,
-                non_blocking=True
+                non_blocking=True,
             )
 
             labels = labels.to(
                 device,
-                non_blocking=True
+                non_blocking=True,
             )
 
             outputs = model(
                 features
             )
 
-            predictions = outputs.argmax(
-                dim=1
+            predictions = (
+                outputs.argmax(
+                    dim=1
+                )
             )
 
             correct += (
@@ -541,7 +509,7 @@ print(
 
 print(
     "Batch size:",
-    HEAD_BATCH_SIZE
+    HEAD_BATCH_SIZE,
 )
 
 print(
@@ -550,16 +518,18 @@ print(
 
 print(
     "Learning rate:",
-    LEARNING_RATE
+    LEARNING_RATE,
 )
 
 print(
     "Epochs:",
-    EPOCHS
+    EPOCHS,
 )
 
 
-for epoch in range(EPOCHS):
+for epoch in range(
+    EPOCHS
+):
 
     classifier_head.train()
 
@@ -572,23 +542,25 @@ for epoch in range(EPOCHS):
 
         features = features.to(
             device,
-            non_blocking=True
+            non_blocking=True,
         )
 
         labels = labels.to(
             device,
-            non_blocking=True
+            non_blocking=True,
         )
 
         optimizer.zero_grad()
 
-        outputs = classifier_head(
-            features
+        outputs = (
+            classifier_head(
+                features
+            )
         )
 
         loss = criterion(
             outputs,
-            labels
+            labels,
         )
 
         loss.backward()
@@ -598,8 +570,8 @@ for epoch in range(EPOCHS):
         batch_size = labels.size(0)
 
         running_loss += (
-            loss.item() *
-            batch_size
+            loss.item()
+            * batch_size
         )
 
         total_samples += (
@@ -607,14 +579,14 @@ for epoch in range(EPOCHS):
         )
 
     epoch_loss = (
-        running_loss /
-        total_samples
+        running_loss
+        / total_samples
     )
 
     validation_accuracy = (
         evaluate_head(
             classifier_head,
-            val_feature_loader
+            val_feature_loader,
         )
     )
 
@@ -629,42 +601,93 @@ for epoch in range(EPOCHS):
 feature_extraction_val_accuracy = (
     evaluate_head(
         classifier_head,
-        val_feature_loader
+        val_feature_loader,
     )
 )
 
 print(
-    "\nFEATURE EXTRACTION VALIDATION ACCURACY:",
+    "\nFEATURE EXTRACTION "
+    "VALIDATION ACCURACY:",
     round(
         feature_extraction_val_accuracy,
-        4
-    )
+        4,
+    ),
 )
 
 if (
     feature_extraction_val_accuracy
     >= 0.80
 ):
+
     print(
-        "Feature extraction alone achieved "
-        "at least 80% validation accuracy."
+        "Feature extraction alone "
+        "achieved at least 80% "
+        "validation accuracy."
     )
+
     print(
         "Fine-tuning required: False"
     )
+
 else:
+
     print(
-        "Feature extraction validation accuracy "
-        "is below 80%."
+        "Feature extraction validation "
+        "accuracy is below 80%."
     )
+
     print(
         "Fine-tuning may be required."
     )
 
 
 # ============================================================
-# TASK 5 — FINAL TEST EVALUATION
+# TASK 4 — FINE-TUNING DECISION
 # ============================================================
+# The feature-extraction validation accuracy determines whether
+# fine-tuning is required.
+#
+# In our actual run the accuracy was 0.8910, so fine-tuning
+# was not required.
+
+
+# ============================================================
+# FINAL TEST EVALUATION
+# IMPORTANT:
+# THE TEST SET IS FIRST PROCESSED HERE.
+# ============================================================
+
+print(
+    "\nEXTRACTING TEST FEATURES "
+    "FOR FINAL EVALUATION..."
+)
+
+test_loader = DataLoader(
+    test_dataset,
+    batch_size=BATCH_SIZE,
+    shuffle=False,
+    num_workers=2,
+    pin_memory=True,
+)
+
+test_features, test_feature_labels = (
+    extract_features(
+        test_loader,
+        "Test",
+    )
+)
+
+test_feature_dataset = TensorDataset(
+    test_features,
+    test_feature_labels,
+)
+
+test_feature_loader = DataLoader(
+    test_feature_dataset,
+    batch_size=HEAD_BATCH_SIZE,
+    shuffle=False,
+)
+
 
 classifier_head.eval()
 
@@ -679,15 +702,19 @@ with torch.no_grad():
 
         features = features.to(
             device,
-            non_blocking=True
+            non_blocking=True,
         )
 
-        outputs = classifier_head(
-            features
+        outputs = (
+            classifier_head(
+                features
+            )
         )
 
-        predictions = outputs.argmax(
-            dim=1
+        predictions = (
+            outputs.argmax(
+                dim=1
+            )
         )
 
         all_test_predictions.extend(
@@ -698,6 +725,7 @@ with torch.no_grad():
             labels.numpy()
         )
 
+
 all_test_predictions = np.array(
     all_test_predictions
 )
@@ -706,9 +734,10 @@ all_test_labels = np.array(
     all_test_labels
 )
 
+
 test_accuracy = accuracy_score(
     all_test_labels,
-    all_test_predictions
+    all_test_predictions,
 )
 
 print(
@@ -719,8 +748,8 @@ print(
     "Test accuracy:",
     round(
         test_accuracy,
-        4
-    )
+        4,
+    ),
 )
 
 
@@ -730,7 +759,7 @@ print(
 
 cm = confusion_matrix(
     all_test_labels,
-    all_test_predictions
+    all_test_predictions,
 )
 
 print(
@@ -749,7 +778,7 @@ precision, recall, f1, support = (
         all_test_labels,
         all_test_predictions,
         labels=np.arange(10),
-        zero_division=0
+        zero_division=0,
     )
 )
 
@@ -786,24 +815,26 @@ for i in range(
     ):
 
         confusion_count = (
-            cm[i, j] +
-            cm[j, i]
+            cm[i, j]
+            + cm[j, i]
         )
 
         pair_results.append({
-            "pair": (
-                f"{CLASS_NAMES[i]} <-> "
-                f"{CLASS_NAMES[j]}"
-            ),
-            "total_confusion": int(
-                confusion_count
-            )
+            "pair":
+                f"{CLASS_NAMES[i]} "
+                f"<-> "
+                f"{CLASS_NAMES[j]}",
+            "total_confusion":
+                int(
+                    confusion_count
+                ),
         })
+
 
 pair_results.sort(
     key=lambda x:
         x["total_confusion"],
-    reverse=True
+    reverse=True,
 )
 
 top_confusion_pairs = (
@@ -816,16 +847,16 @@ print(
 
 for rank, pair in enumerate(
     top_confusion_pairs,
-    start=1
+    start=1,
 ):
 
     print(
         f"{rank}. "
-        f"{pair['pair']} "
-        f"= "
+        f"{pair['pair']} = "
         f"{pair['total_confusion']} "
         f"total confusions"
     )
+
 
 print(
     "\nCONFUSION PATTERN EXPLANATIONS"
@@ -866,31 +897,52 @@ print(
 # ============================================================
 
 artifact = {
-    "backbone": "resnet18",
-    "weights": "ImageNet",
-    "image_size": IMAGE_SIZE,
-    "imagenet_mean": IMAGENET_MEAN,
-    "imagenet_std": IMAGENET_STD,
-    "num_classes": 10,
-    "class_names": CLASS_NAMES,
+
+    "backbone":
+        "resnet18",
+
+    "weights":
+        "ImageNet",
+
+    "image_size":
+        IMAGE_SIZE,
+
+    "imagenet_mean":
+        IMAGENET_MEAN,
+
+    "imagenet_std":
+        IMAGENET_STD,
+
+    "num_classes":
+        10,
+
+    "class_names":
+        CLASS_NAMES,
+
     "feature_extractor_state_dict":
         feature_extractor.state_dict(),
+
     "classifier_head_state_dict":
         classifier_head.state_dict(),
-    "feature_dimension": 512,
+
+    "feature_dimension":
+        512,
+
     "validation_accuracy":
         float(
             feature_extraction_val_accuracy
         ),
+
     "test_accuracy":
         float(
             test_accuracy
-        )
+        ),
 }
+
 
 torch.save(
     artifact,
-    MODEL_PATH
+    MODEL_PATH,
 )
 
 print(
@@ -899,7 +951,7 @@ print(
 
 print(
     "Location:",
-    MODEL_PATH
+    MODEL_PATH,
 )
 
 
@@ -909,7 +961,7 @@ print(
 
 def load_product_classifier(
     model_path=MODEL_PATH,
-    device_name=None
+    device_name=None,
 ):
 
     if device_name is None:
@@ -926,7 +978,7 @@ def load_product_classifier(
 
     checkpoint = torch.load(
         model_path,
-        map_location=load_device
+        map_location=load_device,
     )
 
     backbone = models.resnet18(
@@ -961,7 +1013,7 @@ def load_product_classifier(
         ],
         checkpoint[
             "num_classes"
-        ]
+        ],
     )
 
     classifier_loaded.load_state_dict(
@@ -981,26 +1033,32 @@ def load_product_classifier(
     return {
         "feature_extractor":
             feature_extractor_loaded,
+
         "classifier":
             classifier_loaded,
+
         "class_names":
             checkpoint[
                 "class_names"
             ],
+
         "image_size":
             checkpoint[
                 "image_size"
             ],
+
         "imagenet_mean":
             checkpoint[
                 "imagenet_mean"
             ],
+
         "imagenet_std":
             checkpoint[
                 "imagenet_std"
             ],
+
         "device":
-            load_device
+            load_device,
     }
 
 
@@ -1010,7 +1068,7 @@ def load_product_classifier(
 
 def predict_product_image(
     image_path,
-    model_path=MODEL_PATH
+    model_path=MODEL_PATH,
 ):
 
     loaded = load_product_classifier(
@@ -1020,18 +1078,30 @@ def predict_product_image(
     image_transform = transforms.Compose([
         transforms.Resize(
             (
-                loaded["image_size"],
-                loaded["image_size"]
+                loaded[
+                    "image_size"
+                ],
+                loaded[
+                    "image_size"
+                ],
             )
         ),
+
         transforms.Grayscale(
             num_output_channels=3
         ),
+
         transforms.ToTensor(),
+
         transforms.Normalize(
-            mean=loaded["imagenet_mean"],
-            std=loaded["imagenet_std"]
-        )
+            mean=loaded[
+                "imagenet_mean"
+            ],
+
+            std=loaded[
+                "imagenet_std"
+            ],
+        ),
     ])
 
     image = Image.open(
@@ -1044,32 +1114,38 @@ def predict_product_image(
         )
         .unsqueeze(0)
         .to(
-            loaded["device"]
+            loaded[
+                "device"
+            ]
         )
     )
 
     with torch.no_grad():
 
         features = (
-            loaded["feature_extractor"](
+            loaded[
+                "feature_extractor"
+            ](
                 image_tensor
             )
         )
 
         features = features.view(
             features.size(0),
-            -1
+            -1,
         )
 
         logits = (
-            loaded["classifier"](
+            loaded[
+                "classifier"
+            ](
                 features
             )
         )
 
         probabilities = torch.softmax(
             logits,
-            dim=1
+            dim=1,
         )
 
         predicted_index = int(
@@ -1087,11 +1163,14 @@ def predict_product_image(
 
     return {
         "predicted_class":
-            loaded["class_names"][
+            loaded[
+                "class_names"
+            ][
                 predicted_index
             ],
+
         "confidence":
-            confidence
+            confidence,
     }
 
 
@@ -1115,14 +1194,14 @@ print(
     "Feature extractor loaded:",
     loaded_model[
         "feature_extractor"
-    ] is not None
+    ] is not None,
 )
 
 print(
     "Classifier head loaded:",
     loaded_model[
         "classifier"
-    ] is not None
+    ] is not None,
 )
 
 
@@ -1130,10 +1209,12 @@ print(
 # TASK 8 — EXPORT 5 REAL TEST IMAGES
 # ============================================================
 
-raw_test_dataset = datasets.FashionMNIST(
-    root="data",
-    train=False,
-    download=False
+raw_test_dataset = (
+    datasets.FashionMNIST(
+        root="data",
+        train=False,
+        download=False,
+    )
 )
 
 selected_classes = [
@@ -1141,10 +1222,8 @@ selected_classes = [
     1,
     2,
     3,
-    7
+    7,
 ]
-
-exported_files = []
 
 file_class_names = [
     "T-shirt_top",
@@ -1156,10 +1235,15 @@ file_class_names = [
     "Shirt",
     "Sneaker",
     "Bag",
-    "Ankle_boot"
+    "Ankle_boot",
 ]
 
-for target_class in selected_classes:
+exported_files = []
+
+
+for target_class in (
+    selected_classes
+):
 
     for index in range(
         len(
@@ -1173,20 +1257,18 @@ for target_class in selected_classes:
             ]
         ) == target_class:
 
-            raw_image, raw_label = (
+            raw_image, _ = (
                 raw_test_dataset[
                     index
                 ]
             )
 
-            filename = (
-                f"{index:05d}_"
-                f"{file_class_names[target_class]}.png"
-            )
-
             output_path = os.path.join(
                 SAMPLE_DIR,
-                filename
+                (
+                    f"{index:05d}_"
+                    f"{file_class_names[target_class]}.png"
+                ),
             )
 
             raw_image.save(
@@ -1206,19 +1288,16 @@ print(
 
 print(
     "Directory:",
-    SAMPLE_DIR
+    SAMPLE_DIR,
 )
 
 print(
     "Exported:",
-    len(exported_files)
+    len(exported_files),
 )
 
 for path in exported_files:
-
-    print(
-        path
-    )
+    print(path)
 
 
 # ============================================================
@@ -1229,24 +1308,22 @@ print(
     "\nVERIFICATION"
 )
 
-all_are_png = all(
-    path.lower().endswith(".png")
-    for path in exported_files
-)
-
-all_exist = all(
-    os.path.isfile(path)
-    for path in exported_files
-)
-
 print(
     "All files are PNG:",
-    all_are_png
+    all(
+        path.lower().endswith(
+            ".png"
+        )
+        for path in exported_files
+    ),
 )
 
 print(
     "All files exist:",
-    all_exist
+    all(
+        os.path.isfile(path)
+        for path in exported_files
+    ),
 )
 
 
@@ -1254,10 +1331,12 @@ print(
 # SUBMISSION ARTIFACT — CONFUSION MATRIX CSV
 # ============================================================
 
-confusion_matrix_df = pd.DataFrame(
-    cm,
-    index=CLASS_NAMES,
-    columns=CLASS_NAMES
+confusion_matrix_df = (
+    pd.DataFrame(
+        cm,
+        index=CLASS_NAMES,
+        columns=CLASS_NAMES,
+    )
 )
 
 confusion_matrix_df.to_csv(
@@ -1270,7 +1349,7 @@ print(
 
 print(
     "Location:",
-    CONFUSION_MATRIX_PATH
+    CONFUSION_MATRIX_PATH,
 )
 
 
@@ -1284,51 +1363,52 @@ print(
 
 print(
     "Training samples:",
-    len(train_indices)
+    len(train_indices),
 )
 
 print(
     "Validation samples:",
-    len(val_indices)
+    len(val_indices),
 )
 
 print(
     "Test samples:",
-    len(test_dataset)
+    len(test_dataset),
 )
 
 print(
     "Validation accuracy:",
     round(
         feature_extraction_val_accuracy,
-        4
-    )
+        4,
+    ),
 )
 
 print(
     "Test accuracy:",
     round(
         test_accuracy,
-        4
-    )
+        4,
+    ),
 )
 
 print(
     "Fine-tuning required:",
-    feature_extraction_val_accuracy < 0.80
+    feature_extraction_val_accuracy
+    < 0.80,
 )
 
 print(
     "Model:",
-    MODEL_PATH
+    MODEL_PATH,
 )
 
 print(
     "Confusion matrix:",
-    CONFUSION_MATRIX_PATH
+    CONFUSION_MATRIX_PATH,
 )
 
 print(
     "Sample images:",
-    SAMPLE_DIR
+    SAMPLE_DIR,
 )
