@@ -114,6 +114,8 @@ class AgentState(TypedDict, total=False):
     order_features: Dict[str, Any]
     image_path: str
     intent: str
+    few_shot_example_used: Optional[str]
+    few_shot_match_score: float
     retrieved_chunks: List[Dict[str, Any]]
     retrieval_scores: List[float]
     return_risk_result: Optional[Dict[str, Any]]
@@ -144,19 +146,181 @@ def input_guard(state: AgentState) -> dict:
 
 
 def intent_node(state: AgentState) -> dict:
-    text = state.get("user_message", "").lower().strip()
-    if any(x in text for x in ["return probability", "return risk", "risk of return", "chance of return", "likelihood of return"]):
-        intent = "return_risk"
-    elif any(x in text for x in ["classify this product image", "classify this image", "product image", "product photo", "image classification"]):
-        intent = "product_image"
-    elif any(x in text for x in ["return", "refund", "delivery", "pickup", "tracking", "eligible", "electronics", "apparel", "footwear", "home", "cod", "prepaid", "warranty"]):
-        intent = "policy"
-    else:
-        previous = " ".join(m.get("content", "").lower() for m in state.get("messages", []))
-        follow_up = text.startswith(("and ", "what about ", "how about "))
-        intent = "policy" if follow_up and any(x in previous for x in ["return", "refund", "delivery", "policy"]) else "general"
-    return {"intent": intent}
+    text = state.get(
+        "user_message",
+        ""
+    ).lower().strip()
 
+    # --------------------------------------------------------
+    # Few-shot intent examples
+    # --------------------------------------------------------
+
+    few_shot_examples = [
+        {
+            "example":
+                "What is the return window for shoes?",
+            "intent":
+                "policy",
+        },
+        {
+            "example":
+                "What is the return probability for this order?",
+            "intent":
+                "return_risk",
+        },
+    ]
+
+    # --------------------------------------------------------
+    # Deterministic few-shot matching
+    # Uses token-overlap similarity so the examples actively
+    # influence routing, while deterministic fallback rules
+    # still handle other requests.
+    # --------------------------------------------------------
+
+    text_tokens = set(
+        text.replace("?", "")
+            .replace(".", "")
+            .split()
+    )
+
+    best_example = None
+    best_score = 0.0
+
+    for example in few_shot_examples:
+
+        example_tokens = set(
+            example["example"]
+            .lower()
+            .replace("?", "")
+            .replace(".", "")
+            .split()
+        )
+
+        union = (
+            text_tokens
+            | example_tokens
+        )
+
+        intersection = (
+            text_tokens
+            & example_tokens
+        )
+
+        score = (
+            len(intersection) / len(union)
+            if union
+            else 0.0
+        )
+
+        if score > best_score:
+            best_score = score
+            best_example = example
+
+    # A sufficiently similar few-shot example controls routing.
+    if best_example is not None and best_score >= 0.20:
+        return {
+            "intent":
+                best_example["intent"],
+            "few_shot_example_used":
+                best_example["example"],
+            "few_shot_match_score":
+                round(best_score, 4),
+        }
+
+    # --------------------------------------------------------
+    # Normal deterministic routing fallback
+    # --------------------------------------------------------
+
+    risk_words = [
+        "return probability",
+        "return risk",
+        "risk of return",
+        "chance of return",
+        "likelihood of return",
+    ]
+
+    image_words = [
+        "classify this product image",
+        "classify this image",
+        "product image",
+        "product photo",
+        "image classification",
+    ]
+
+    policy_words = [
+        "return",
+        "refund",
+        "delivery",
+        "pickup",
+        "tracking",
+        "eligible",
+        "electronics",
+        "apparel",
+        "footwear",
+        "home",
+        "cod",
+        "prepaid",
+        "warranty",
+    ]
+
+    if any(
+        x in text
+        for x in risk_words
+    ):
+        intent = "return_risk"
+
+    elif any(
+        x in text
+        for x in image_words
+    ):
+        intent = "product_image"
+
+    elif any(
+        x in text
+        for x in policy_words
+    ):
+        intent = "policy"
+
+    else:
+
+        previous_messages = state.get(
+            "messages",
+            []
+        )
+
+        previous_text = " ".join(
+            message.get(
+                "content",
+                ""
+            ).lower()
+            for message in previous_messages
+        )
+
+        follow_up = (
+            text.startswith("and ")
+            or text.startswith("what about ")
+            or text.startswith("how about ")
+        )
+
+        if (
+            follow_up
+            and (
+                "return" in previous_text
+                or "refund" in previous_text
+                or "delivery" in previous_text
+                or "policy" in previous_text
+            )
+        ):
+            intent = "policy"
+
+        else:
+            intent = "general"
+
+    return {
+        "intent": intent,
+        "few_shot_example_used": None,
+        "few_shot_match_score": 0.0,
+    }
 
 def policy_node(state: AgentState) -> dict:
     current = state.get("user_message", "").lower().strip()
