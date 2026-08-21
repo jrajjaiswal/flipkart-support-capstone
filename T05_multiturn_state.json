@@ -1,0 +1,40 @@
+{
+  "title": "Multi-turn Conversation - State Retained",
+  "turns": [
+    {
+      "role": "user",
+      "content": "What is the return window for apparel?"
+    },
+    {
+      "role": "assistant",
+      "content": {
+        "answer": "Apparel and footwear items can be returned within 7 days of delivery when the item meets the applicable return conditions.",
+        "source": "policy_kb",
+        "confidence": 0.5851
+      }
+    },
+    {
+      "role": "user",
+      "content": "And what about electronics?"
+    },
+    {
+      "role": "assistant",
+      "content": {
+        "answer": "Eligible electronics can be returned within 10 days of delivery when the product satisfies the applicable return conditions.",
+        "source": "policy_kb",
+        "confidence": 0.6461
+      }
+    }
+  ],
+  "metadata": {
+    "turn_2_intent": "policy",
+    "turn_2_retrieval_scores": [
+      0.6461,
+      0.6132,
+      0.4937
+    ],
+    "turn_2_top_document": "POL002",
+    "state_message_count": 2,
+    "state_retained": true
+  }
+}
