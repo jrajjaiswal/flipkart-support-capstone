@@ -1,0 +1,29 @@
+{
+  "title": "Ungrounded Policy - Refused",
+  "turns": [
+    {
+      "role": "user",
+      "content": "What is the warranty period for nuclear reactors?"
+    },
+    {
+      "role": "assistant",
+      "content": {
+        "answer": "I can't verify that policy from the available policy information.",
+        "source": "policy_kb",
+        "confidence": 0.0
+      }
+    }
+  ],
+  "metadata": {
+    "intent": "policy",
+    "retrieval_scores": [
+      0.2646,
+      0.224,
+      0.2106
+    ],
+    "maximum_similarity": 0.2646,
+    "groundedness_threshold": 0.35,
+    "grounded": false,
+    "refused": true
+  }
+}
