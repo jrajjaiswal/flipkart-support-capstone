@@ -1,0 +1,62 @@
+[
+  {
+    "doc_id": "POL001",
+    "title": "Apparel and Footwear Return Window",
+    "text": "Apparel and footwear items can be returned within 7 days of delivery when the item meets the applicable return conditions. The item should remain eligible for return under the category policy."
+  },
+  {
+    "doc_id": "POL002",
+    "title": "Electronics Return Window",
+    "text": "Eligible electronics can be returned within 10 days of delivery when the product satisfies the applicable return conditions. Product-specific exclusions may still apply."
+  },
+  {
+    "doc_id": "POL003",
+    "title": "Home Products Return Window",
+    "text": "Eligible home-category products can be returned within 7 days of delivery when the item satisfies the applicable return conditions and eligibility requirements."
+  },
+  {
+    "doc_id": "POL004",
+    "title": "COD Refund Timeline",
+    "text": "For eligible COD orders, the refund is initiated after the returned item passes the required return processing checks. The refund timeline begins after the refund is approved."
+  },
+  {
+    "doc_id": "POL005",
+    "title": "Prepaid Refund Timeline",
+    "text": "For eligible prepaid orders, the refund is initiated after the returned item passes the required return processing checks. The amount is then sent through the applicable original payment route."
+  },
+  {
+    "doc_id": "POL006",
+    "title": "Standard Delivery SLA",
+    "text": "Standard delivery is expected within the delivery estimate shown for the order. Delivery timing can vary by destination, seller processing, and operational conditions."
+  },
+  {
+    "doc_id": "POL007",
+    "title": "Delayed Delivery Handling",
+    "text": "When an order passes its expected delivery estimate, the customer can check the latest tracking status before requesting further delivery support."
+  },
+  {
+    "doc_id": "POL008",
+    "title": "Reverse Pickup Eligibility",
+    "text": "Reverse pickup is available when the order and item are eligible for return and the pickup service is available for the delivery location."
+  },
+  {
+    "doc_id": "POL009",
+    "title": "Return Condition Requirement",
+    "text": "Returned items must satisfy the applicable category return conditions before the return can be approved. Items that do not meet those conditions may be rejected."
+  },
+  {
+    "doc_id": "POL010",
+    "title": "Return Request Process",
+    "text": "A customer should raise the return request through the order support flow while the item is within its applicable return window. The request is then checked against the relevant policy conditions."
+  },
+  {
+    "doc_id": "POL011",
+    "title": "Delivery Tracking",
+    "text": "Customers can use the order tracking information to view the latest delivery status. Tracking updates may appear as the shipment moves through different delivery stages."
+  },
+  {
+    "doc_id": "POL012",
+    "title": "Pickup Attempt",
+    "text": "When a reverse pickup is scheduled, the pickup partner attempts collection according to the available pickup schedule. If a pickup attempt fails, the customer may need to follow the support flow for another attempt."
+  }
+]

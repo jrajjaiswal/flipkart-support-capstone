@@ -1,0 +1,22 @@
+{
+  "title": "Fresh Conversation - State Reset",
+  "turns": [
+    {
+      "role": "user",
+      "content": "And what about electronics?"
+    },
+    {
+      "role": "assistant",
+      "content": {
+        "answer": "I can help with return policy, return-risk assessment, and product-image classification.",
+        "source": "policy_kb",
+        "confidence": 0.0
+      }
+    }
+  ],
+  "metadata": {
+    "initial_message_count": 0,
+    "state_absent": true,
+    "intent": "general"
+  }
+}

@@ -3,3 +3,10 @@ numpy
 scikit-learn
 matplotlib
 seaborn
+faiss-cpu
+sentence-transformers
+langgraph
+torch
+torchvision
+Pillow
+joblib

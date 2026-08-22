@@ -1,0 +1,23 @@
+{
+  "title": "Few-shot Intent Demonstration — Policy",
+  "turns": [
+    {
+      "role": "user",
+      "content": "What is the return window for shoes?"
+    },
+    {
+      "role": "assistant",
+      "content": {
+        "answer": "Apparel and footwear items can be returned within 7 days of delivery when the item meets the applicable return conditions.",
+        "source": "policy_kb",
+        "confidence": 0.8419
+      }
+    }
+  ],
+  "metadata": {
+    "intent": "policy",
+    "few_shot_example_used": "What is the return window for shoes?",
+    "few_shot_match_score": 1.0,
+    "few_shot_routing_demonstrated": true
+  }
+}

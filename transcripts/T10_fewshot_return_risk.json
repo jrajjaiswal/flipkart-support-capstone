@@ -1,0 +1,23 @@
+{
+  "title": "Few-shot Intent Demonstration — Return Risk",
+  "turns": [
+    {
+      "role": "user",
+      "content": "What is the return probability for this order?"
+    },
+    {
+      "role": "assistant",
+      "content": {
+        "answer": "Estimated return probability is 61.88%. Risk bucket: Medium.",
+        "source": "return_risk_tool",
+        "confidence": 0.6188421902267325
+      }
+    }
+  ],
+  "metadata": {
+    "intent": "return_risk",
+    "few_shot_example_used": "What is the return probability for this order?",
+    "few_shot_match_score": 1.0,
+    "few_shot_routing_demonstrated": true
+  }
+}
