@@ -8,197 +8,106 @@ This repository contains the three-part Flipkart Support Capstone:
 - Part 2 — Product-category image classification
 - Part 3 — Retrieval-augmented support agent using LangGraph
 
-## Part 1 — Return Risk
+The three parts form one connected system: Part 1 saves the return-risk model, Part 2 saves the product-image classifier, and Part 3 loads both saved artifacts as real callable tools while answering grounded policy questions from a local knowledge base.
 
-Main files:
+---
+
+# Part 1 — Return Risk
+
+## Main files
 
 - `generate_orders.py`
 - `orders_dataset.csv`
 - `train_return_risk.py`
 - `models/return_risk_model.pkl`
 
-The saved Random Forest is used by the Part 3 `check_return_risk` tool.
+## Dataset verification
 
-Risk threshold:
+- Rows: `6000`
+- Columns: `13`
+- Overall return rate: `0.2275`
+- Missing `rating_given` rate: `0.1305`
 
-- `t*_rf = 0.47`
-- Low: probability < 0.47
-- Medium: 0.47 to < 0.62
-- High: probability >= 0.62
+### Return rate by product category
 
-## Part 2 — Product Image Classification
+| Product category | Return rate |
+|---|---:|
+| Apparel | 0.2643 |
+| Beauty | 0.2003 |
+| Electronics | 0.1869 |
+| Footwear | 0.2596 |
+| Home | 0.1915 |
 
-Main files:
+### Return rate by payment method
 
-- `train_product_classifier.py`
-- `models/product_classifier.pt`
-- `data/sample_images/`
+| Payment method | Return rate |
+|---|---:|
+| COD | 0.3075 |
+| Prepaid_Card | 0.1682 |
+| Prepaid_UPI | 0.1692 |
+| Wallet | 0.1785 |
 
-Verified sample:
+## Missingness analysis
 
-`00001_Pullover.png`
+The `rating_given` missingness is classified as **MAR** because the missingness depends on the observed `payment_method` column.
 
-Result:
+- COD missing-rate: `0.2283`
+- Non-COD missing-rate: `0.0606`
+- Missing-rate gap: `0.1677`
 
-- Predicted category: `Pullover`
-- Confidence: approximately `0.9706`
+The dependency on the observed payment method means the pattern is not MCAR. It is not MNAR because the missingness mechanism is not defined by the unobserved rating value itself.
 
-## Part 3 — Flipkart Support Agent
+## Train/test split
 
-Main files:
+- Training rows: `4800`
+- Test rows: `1200`
 
-- `part3_agent.py`
-- `policy_knowledge_base.json`
-- `build_retrieval_index.py`
-- `retrieval_evaluation.json`
-- `transcripts/`
+## Baseline
 
-### Knowledge Base
+- DummyClassifier accuracy: `0.7725`
+- DummyClassifier F1 for `returned=1`: `0.0`
 
-- 12 policy documents
-- 21 sentence-wise chunks
+The high baseline accuracy is misleading because the classifier predicts the majority class and therefore has zero recall for returned orders.
 
-### Retrieval
+## Logistic Regression
 
-- Embedding model: `all-MiniLM-L6-v2`
-- Vector index: `Faiss IndexFlatIP`
-- Top-k retrieval: 3
+Default threshold:
 
-### LangGraph
+`0.50`
 
-Application nodes:
+Metrics:
 
-1. `input_guard`
-2. `intent`
-3. `policy`
-4. `risk`
-5. `image`
-6. `response`
-7. `output_guard`
+- Accuracy: `0.5917`
+- F1: `0.3921`
+- Recall: `0.5788`
+- Precision: `0.2964`
+- ROC-AUC: `0.6253`
 
-The graph uses conditional routing.
+### Threshold sweep
 
-### Intents
+Best Logistic Regression threshold:
 
-- `policy`
-- `return_risk`
-- `product_image`
-- `general`
+`t* = 0.44`
 
-### Real Tools
+At this threshold:
 
-`check_return_risk` loads:
+- F1: `0.4091`
+- Recall: `0.7582`
+- Precision: `0.2801`
 
-`models/return_risk_model.pkl`
+Lowering the threshold makes the system more willing to flag possible returns, increasing recall while accepting more false positives and therefore reducing precision.
 
-`classify_product_image` loads:
+## Random Forest
 
-`models/product_classifier.pt`
+Grid-search space included:
 
-and operates on real PNG files in `data/sample_images/`.
+- `n_estimators`: `[100, 200]`
+- `max_depth`: `[6, 10, None]`
+- Scoring: `roc_auc`
+- Cross-validation: 5-fold `StratifiedKFold`
 
-### Guardrails
+Best parameters:
 
-Input-side prompt-injection filtering blocks patterns such as:
-
-- `ignore previous instructions`
-- `ignore all rules`
-- `reveal your system prompt`
-
-Output-side groundedness threshold:
-
-`0.35`
-
-A policy question below this threshold is refused rather than fabricated.
-
-### MOCK_LLM
-
-The graded mode is deterministic `MOCK_LLM`.
-
-It requires zero API keys and zero outbound LLM calls.
-
-### Prompt Design
-
-The response-generation configuration includes:
-
-- Role prompting
-- 4S — Specific
-- 4S — Short
-- 4S — Surround
-- 4S — Single
-- Few-shot intent examples
-
-## Test Transcripts
-
-The required transcripts are stored in `transcripts/`.
-
-- [T01 — Apparel policy](transcripts/T01_policy_apparel.json)
-- [T02 — COD refund policy](transcripts/T02_policy_cod_refund.json)
-- [T03 — Return-risk tool](transcripts/T03_return_risk.json)
-- [T04 — Product-image tool](transcripts/T04_product_image.json)
-- [T05 — Multi-turn state](transcripts/T05_multiturn_state.json)
-- [T05 — Fresh conversation](transcripts/T05_fresh_conversation.json)
-- [T06 — Prompt injection](transcripts/T06_prompt_injection.json)
-- [T07 — Ungrounded policy refusal](transcripts/T07_ungrounded_policy.json)
-- [T08 — General conversation](transcripts/T08_general.json)
-
-The multi-turn transcript demonstrates state retained within one conversation, while the separate fresh-conversation transcript starts with no previous messages.
-
-## Retrieval Evaluation
-
-Evaluation is performed at the parent-document level after mapping chunks to parent documents and deduplicating them.
-
-Results:
-
-- Average Precision@3: `0.4333`
-- Average Recall@3: `0.9000`
-
-Full evaluation:
-
-[retrieval_evaluation.json](retrieval_evaluation.json)
-
-## Verified Behaviors
-
-Verified behaviors include:
-
-- Policy retrieval
-- Return-risk prediction
-- Product-image classification
-- Prompt-injection blocking
-- Groundedness refusal
-- Multi-turn state
-- Fresh-conversation reset
-- Structured response output
-
-Verified return-risk result:
-
-- Probability: `0.61884219`
-- Risk bucket: `Medium`
-
-Verified ungrounded-policy case:
-
-- Maximum similarity: `0.2646`
-- Threshold: `0.35`
-- Result: refusal
-
-## Basic Run Order
-
-### Part 1
-
-- `generate_orders.py`
-- `train_return_risk.py`
-
-### Part 2
-
-- `train_product_classifier.py`
-
-### Part 3
-
-- `build_retrieval_index.py`
-- `part3_agent.py`
-
-The Part 3 implementation rebuilds the knowledge-base embeddings and Faiss index and loads the saved Part 1 and Part 2 model artifacts.
-
-## Submission Contents
-
-The repository contains the Part 1 and Part 2 models, Part 3 agent source, knowledge base, retrieval build code, retrieval evaluation, transcripts, and this root README.
+```text
+classifier__max_depth = 6
+classifier__n_estimators = 100
